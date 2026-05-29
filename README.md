@@ -26,7 +26,6 @@ Para lograr esta integración y gestionar un enrutamiento seguro y dinámico, se
 
 ## 🏗️ Arquitectura del Sistema
 
-!Demo Setup
 
 ![Demo Setup](./doc/images/Demo-Setup.jpg)
 
@@ -52,8 +51,28 @@ El entorno se orquesta completamente utilizando Docker Compose, estructurando la
    ```
 3. Una vez que los contenedores estén levantados, acceder al servicio desde `http://localhost`.
 
-> **🔐 Nota sobre el acceso:** 
-> Notarás que inicialmente todo el acceso está bloqueado y denegado. Para permitir el flujo de datos, primero debes configurar en Keycloak un *Realm*, registrar un *Client*, y asignar *Roles*, *Usuarios* y *Permisos*. Puedes apoyarte en la Guía de Administración de Servidores de Keycloak.
+### 🔐 Configuración de Keycloak (Paso a Paso)
+
+Notarás que inicialmente todo el acceso está bloqueado por defecto. Para permitir el flujo de peticiones, debes configurar Keycloak accediendo a `http://localhost:8080` (Credenciales por defecto: `admin` / `admin`):
+
+1. **Crear un Realm**:
+   - En el panel izquierdo, despliega el menú de Realms y haz clic en **Create Realm**. Nómbralo (`demo`).
+2. **Crear un Client**:
+   - Ve a **Clients** -> **Create client**.
+   - Asigna un *Client ID* (`demo-apisix`).
+   - En *Capability config*, es crucial que actives **Client authentication** y **Authorization**.
+   - En *Valid redirect URIs* especifica tu host `http://localhost/*`
+3. **Crear Roles**:
+   - Ve a **Realm roles** -> **Create role**. Crea los roles necesarios para tu lógica de negocio (`user`, `admin`).
+4. **Crear Usuarios**:
+   - Ve a **Users** -> **Add user**.
+   - En la pestaña *Credentials*, asígnale una contraseña.
+   - En la pestaña *Role mapping*, asígnale los roles creados en el paso anterior.
+5. **Configurar Autorización (Resources y Permissions)**:
+   - Vuelve a tu **Client** y entra en la pestaña **Authorization**.
+   - **Resources**: Define los endpoints de tu API que deseas proteger (`/resource-one`, `/resource-two`, `/resource-three`).
+   - **Policies**: En la pestaña de políticas, crea una política basada en roles (*Role-based policy*) y asóciala a los roles del paso 3.
+   - **Permissions**: Finalmente, crea un permiso basado en recursos (*Resource-based permission*) que vincule tus *Resources* con tus *Policies*.
 
 ## 📚 Referencias y Documentación Oficial
 
