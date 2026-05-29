@@ -1,57 +1,71 @@
-# APISIX - KEYCLOAK DEMO
+# 🚀 APISIX & Keycloak - Arquitectura de Seguridad y API Gateway
 
-This is a simple demo project showcasing the integration of [Apache APISIX](https://apisix.apache.org/) with [Keycloak](https://www.keycloak.org/) for authentication and authorization.
+Este proyecto ilustra la integración de [Apache APISIX](https://apisix.apache.org/) como API Gateway con [Keycloak](https://www.keycloak.org/) para la gestión de identidad, autenticación y autorización (IAM).
 
-I use several APISIX plugins to achieve this integration and to manage basic routing:
-- **redirect** - To redirect root requests to a specific resource path.
-- **proxy-rewrite** - To modify request URIs for routing to backend services.
-- **response-rewrite** - To manage response headers, such as disabling caching for authenticated responses.
-- **openid-connect** - To handle authentication via Keycloak.
-- **authz-keycloak** - To manage [authorization](https://www.keycloak.org/docs/latest/authorization_services/index.html) based on Keycloak roles and permissions.
-- **serverless-pre-function** - To perform custom logic before request processing.
+El objetivo principal de este repositorio es servir como referencia arquitectónica para implementar patrones de seguridad perimetral (Zero Trust) en microservicios, utilizando herramientas de código abierto de nivel empresarial.
 
-## Important References
+## 🛠️ Tecnologías Utilizadas
 
-- [APISIX Official Documentation](https://apisix.apache.org/docs/)
-- [APISIX OpenID Connect Plugin](https://apisix.apache.org/docs/apisix/plugins/openid-connect/)
-- [APISIX Keycloak Authorization Plugin](https://apisix.apache.org/docs/apisix/plugins/authz-keycloak/)
-- [APISIX Plugins Priority](https://blog.frankel.ch/apisix-plugins-priority-leaky-abstraction/)
-- [Keycloak Official Documentation](https://www.keycloak.org/documentation)
-- [Keycloak Server Administration Guide](https://www.keycloak.org/docs/latest/server_admin/index.html)
-- [Keycloak Authorization Services Guide](https://www.keycloak.org/docs/latest/authorization_services/index.html)
+*   **[Apache APISIX](https://apisix.apache.org/):** API Gateway dinámico y de alto rendimiento nativo de la nube.
+*   **[Keycloak](https://www.keycloak.org/):** Servidor de administración de acceso e identidad (IAM) de código abierto.
+*   **[Docker & Docker Compose](https://www.docker.com/):** Orquestación y contenedorización de los servicios.
+*   **[PostgreSQL](https://www.postgresql.org/):** Base de datos relacional para el almacenamiento persistente de Keycloak.
+*   **Nginx:** Servidor web ligero utilizado para simular los microservicios de backend.
+*   **Bash:** Scripting para la automatización segura del despliegue.
 
-## Demo Setup
+## 🔌 Plugins de APISIX Implementados
+
+Para lograr esta integración y gestionar un enrutamiento seguro y dinámico, se han configurado los siguientes plugins del Gateway:
+
+- **`openid-connect`**: Gestiona el flujo de autenticación delegando la validación de identidad a Keycloak.
+- **`authz-keycloak`**: Administra la autorización validando roles, recursos y permisos definidos (RBAC/ABAC).
+- **`proxy-rewrite`**: Reescribe las URIs de las peticiones en tiempo real para un enrutamiento transparente hacia el backend.
+- **`response-rewrite`**: Manipula las cabeceras de respuesta (ej. deshabilitar la caché en respuestas autenticadas por motivos de seguridad).
+- **`redirect`**: Redirecciona de forma inteligente las peticiones de la raíz hacia rutas de recursos específicos.
+- **`serverless-pre-function`**: Ejecuta lógica personalizada (serverless) en fases tempranas, antes del procesamiento principal de la petición.
+
+## 🏗️ Arquitectura del Sistema
+
+!Demo Setup
 
 ![Demo Setup](./doc/images/Demo-Setup.jpg)
 
-The demo setup consists of the following components that are orchestrated using Docker Compose:
+El entorno se orquesta completamente utilizando Docker Compose, estructurando la red en los siguientes componentes clave:
 
-- **api-gateway-service** - Apache APISIX acting as the API Gateway.
-- **iam-service with iam-db-service** - Keycloak server for identity and access management including a Postgresql database.
-- **resource-one-service** - A sample backend service protected by APISIX and Keycloak.
-- **resource-two-service** - Another sample backend service protected by APISIX and Keycloak.
-- **resource-three-service** - A third sample backend service protected by APISIX and Keycloak.
+- `api-gateway-service`: Instancia de Apache APISIX que actúa como único punto de entrada.
+- `iam-service` & `iam-db-service`: Servidor Keycloak respaldado por PostgreSQL.
+- `resource-[one|two|three]-service`: Tres microservicios backend de prueba (páginas HTML servidas vía Nginx). Estos recursos simulan endpoints del mundo real como APIs REST, servicios de IA, bases de datos, fuertemente protegidos.
 
-The three resources are simple html pages served via Nginx. But you can imagine those to be endpoints of an API, AI services, storage services, etc.
+## 🚀 Guía de Despliegue (Quick Start)
 
-### Running the Demo
+### Requisitos Previos
+- Docker y Docker Compose instalados en tu máquina. En entornos Windows, se recomienda usar Docker Desktop.
+- Un entorno de terminal compatible con bash (Para Windows se aconseja Git Bash).
+- ⚠️ **Importante:** Asegúrate de crear un archivo `.env` en la raíz del proyecto antes de ejecutar el entorno, de lo contrario la ejecución se detendrá por seguridad.
 
-To run the demo, you need to have [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on your machine. On Windows, you can use [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+### Pasos para Ejecutar la Demo
 
-The you can simply run `./scripts/start.sh` from the project root directory to start all services. If you are on Windows, I recomment the Git Bash terminal that comes with [Git for Windows](https://gitforwindows.org/) to run the script.
+1. Clona el repositorio y sitúate en la raíz del proyecto.
+2. Ejecuta el script de inicialización automatizado:
+   ```bash
+   ./scripts/start.sh
+   ```
+3. Una vez que los contenedores estén levantados, acceder al servicio desde `http://localhost`.
 
-After the services are started, you can access the demo using http://localhost. You will notice that nothing is accessible at first. You must first setup a Keycloak realm, client, roles, users and permissions. The [Keycloak Server Administration Guide](https://www.keycloak.org/docs/latest/server_admin/index.html) is a great resource to get started with Keycloak.
+> **🔐 Nota sobre el acceso:** 
+> Notarás que inicialmente todo el acceso está bloqueado y denegado. Para permitir el flujo de datos, primero debes configurar en Keycloak un *Realm*, registrar un *Client*, y asignar *Roles*, *Usuarios* y *Permisos*. Puedes apoyarte en la Guía de Administración de Servidores de Keycloak.
 
-But I also recorded a Youtube Video in which I explain in-depth how to setup APISIX and Keycloak to secure your services. You can find the video below.
+## 📚 Referencias y Documentación Oficial
 
-## Youtube Video
+* **Apache APISIX**
+  * [APISIX Official Documentation](https://apisix.apache.org/docs/)
+  * [APISIX OpenID Connect Plugin](https://apisix.apache.org/docs/apisix/plugins/openid-connect/)
+  * [APISIX Keycloak Authorization Plugin](https://apisix.apache.org/docs/apisix/plugins/authz-keycloak/)
+  * [APISIX Plugins Priority](https://blog.frankel.ch/apisix-plugins-priority-leaky-abstraction/)
+* **Keycloak**
+  * [Keycloak Official Documentation](https://www.keycloak.org/documentation)
+  * [Keycloak Server Administration Guide](https://www.keycloak.org/docs/latest/server_admin/index.html)
+  * [Keycloak Authorization Services Guide](https://www.keycloak.org/docs/latest/authorization_services/index.html)
 
-In this Youtube video I explain how to setup APISIX and Keycloak to secure your services:
-
-TODO -> Insert Link
-
-The topics I cover are things I learned by studying the documentation and a lot of trial and error. I hope the video saves you some time and helps you to get started quickly.
-
-
-
-
+---
+*Si este proyecto te ha sido útil, no olvides darle una estrella ⭐ al repositorio.*
