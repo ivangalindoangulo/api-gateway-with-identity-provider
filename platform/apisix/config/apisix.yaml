@@ -1,4 +1,37 @@
+response_rewrite_disable_cache: &response_rewrite_disable_cache
+  headers:
+    set:
+      Cache-Control: "no-cache, no-store, must-revalidate"
+      Pragma: "no-cache"
+      Expires: "0"
+
 routes:
+  # IAM         
+  - id: iam-service
+    uris: 
+      - /iam
+      - /iam/*
+    upstream:
+      nodes:
+        "iam-service:8080": 1
+      type: roundrobin
+
+  # logout
+  - id: logout
+    uris:
+      - /logout
+      - /logout/*
+    plugins:
+      openid-connect:
+        bearer_only: false
+        session:
+          secret: "${{ APISIX_SESSION_SECRET }}"
+        client_id: "${{ KEYCLOAK_CLIENT_ID }}"
+        client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
+        discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
+        post_logout_redirect_uri: "${{ BASE_URL }}/"
+    
+  # default forward
   - id: root-forward
     uri: /
     plugins:
@@ -6,46 +39,180 @@ routes:
         uri: /resource1/
         redirect_code: 302
         
-  - id: resource-one
+  # Resource 1
+  - id: access-denied-one
     uris:
-      - /resource1 
-      - /resource1/*
+      - /resource1/access-denied.html
     upstream:
       nodes:
         "resource-one-service:80": 1
       type: roundrobin
     plugins:
       proxy-rewrite:
-        regex_uri:
-            - "^/resource1/?(.*)$"
-            - "/$1"
+        uri: /access-denied.html
 
-  - id: resource-two
+  - id: resource-one
+    uris: 
+      - /resource1
+      - /resource1/*
+    upstream:
+      nodes:
+        "resource-one-service:80": 1
+      type: roundrobin
+    plugins:
+      response-rewrite: *response_rewrite_disable_cache
+      proxy-rewrite:
+        regex_uri:
+          - "^/resource1/?(.*)$"
+          - "/$1"
+      openid-connect:
+        bearer_only: false
+        session:
+          secret: "${{ APISIX_SESSION_SECRET }}"
+        client_id: "${{ KEYCLOAK_CLIENT_ID }}"
+        client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
+        discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
+        scope: "openid email"
+        realm: "${{ KEYCLOAK_REALM }}"
+        redirect_uri: "${{ BASE_URL }}/resource1/oidc/"
+        post_logout_redirect_uri: "${{ BASE_URL }}/resource1/"
+      serverless-pre-function:
+        phase: access
+        functions:
+          - | 
+            return function()
+              package.path = "/usr/local/apisix/conf/functions/?.lua;" .. package.path
+              local session_utils = require("session_utils")
+              
+              if not session_utils.has_bearer_token() then
+                session_utils.inject_session_token_as_bearer("${{ APISIX_SESSION_SECRET }}")
+              end
+            end
+      authz-keycloak:
+        token_endpoint_auth_method: client_secret_post
+        discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
+        client_id: "${{ KEYCLOAK_CLIENT_ID }}"
+        client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
+        access_denied_redirect_uri: "${{ BASE_URL }}/resource1/access-denied.html"
+        permissions:
+          - "resource-one"
+
+
+  # Resource 2
+  - id: access-denied-two
     uris:
-      - /resource2 
-      - /resource2/*
+      - /resource2/access-denied.html
     upstream:
       nodes:
         "resource-two-service:80": 1
       type: roundrobin
     plugins:
       proxy-rewrite:
-        regex_uri:
-            - "^/resource2/?(.*)$"
-            - "/$1"
+        uri: /access-denied.html
 
-  - id: resource-three
+  - id: resource-two
+    uris: 
+      - /resource2
+      - /resource2/*
+    upstream:
+      nodes:
+        "resource-two-service:80": 1
+      type: roundrobin
+    plugins:
+      response-rewrite: *response_rewrite_disable_cache
+      proxy-rewrite:
+        regex_uri:
+          - "^/resource2/?(.*)$"
+          - "/$1"
+      openid-connect:
+        bearer_only: false
+        session:
+          secret: "${{ APISIX_SESSION_SECRET }}"
+        client_id: "${{ KEYCLOAK_CLIENT_ID }}"
+        client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
+        discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
+        scope: "openid email"
+        realm: "${{ KEYCLOAK_REALM }}"
+        redirect_uri: "${{ BASE_URL }}/resource2/oidc/"
+        post_logout_redirect_uri: "${{ BASE_URL }}/resource2/"
+      serverless-pre-function:
+        phase: access
+        functions:
+          - | 
+            return function()
+              package.path = "/usr/local/apisix/conf/functions/?.lua;" .. package.path
+              local session_utils = require("session_utils")
+              
+              if not session_utils.has_bearer_token() then
+                session_utils.inject_session_token_as_bearer("${{ APISIX_SESSION_SECRET }}")
+              end
+            end
+      authz-keycloak:
+        token_endpoint_auth_method: client_secret_post
+        discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
+        client_id: "${{ KEYCLOAK_CLIENT_ID }}"
+        client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
+        access_denied_redirect_uri: "${{ BASE_URL }}/resource2/access-denied.html"
+        permissions:
+          - "resource-two"
+
+  # Resource 3
+  - id: access-denied-three
     uris:
-      - /resource3 
-      - /resource3/*
+      - /resource3/access-denied.html
     upstream:
       nodes:
         "resource-three-service:80": 1
       type: roundrobin
     plugins:
       proxy-rewrite:
+        uri: /access-denied.html
+
+  - id: resource-three
+    uris: 
+      - /resource3
+      - /resource3/*
+    upstream:
+      nodes:
+        "resource-three-service:80": 1
+      type: roundrobin
+    plugins:
+      response-rewrite: *response_rewrite_disable_cache
+      proxy-rewrite:
         regex_uri:
-            - "^/resource3/?(.*)$"
-            - "/$1"
+          - "^/resource3/?(.*)$"
+          - "/$1"
+      openid-connect:
+        bearer_only: false
+        session:
+          secret: "${{ APISIX_SESSION_SECRET }}"
+        client_id: "${{ KEYCLOAK_CLIENT_ID }}"
+        client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
+        discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
+        scope: "openid email"
+        realm: "${{ KEYCLOAK_REALM }}"
+        redirect_uri: "${{ BASE_URL }}/resource3/oidc/"
+        post_logout_redirect_uri: "${{ BASE_URL }}/resource3/"
+      serverless-pre-function:
+        phase: access
+        functions:
+          - | 
+            return function()
+              package.path = "/usr/local/apisix/conf/functions/?.lua;" .. package.path
+              local session_utils = require("session_utils")
+              
+              if not session_utils.has_bearer_token() then
+                session_utils.inject_session_token_as_bearer("${{ APISIX_SESSION_SECRET }}")
+              end
+            end
+      authz-keycloak:
+        token_endpoint_auth_method: client_secret_post
+        discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
+        client_id: "${{ KEYCLOAK_CLIENT_ID }}"
+        client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
+        access_denied_redirect_uri: "${{ BASE_URL }}/resource3/access-denied.html"
+        permissions:
+          - "resource-three"
+  
 
 #END

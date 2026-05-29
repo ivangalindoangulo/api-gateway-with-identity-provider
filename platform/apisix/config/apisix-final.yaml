@@ -1,9 +1,9 @@
 response_rewrite_disable_cache: &response_rewrite_disable_cache
-  "headers": {
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0"
-  }
+  headers:
+    set:
+      Cache-Control: "no-cache, no-store, must-revalidate"
+      Pragma: "no-cache"
+      Expires: "0"
 
 routes:
   # IAM         
@@ -74,8 +74,8 @@ routes:
         discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
         scope: "openid email"
         realm: "${{ KEYCLOAK_REALM }}"
-        redirect_uri: "${{BASE_URL}}/resource1/oidc/"
-        post_logout_redirect_uri: "${{BASE_URL}}/resource1/"
+        redirect_uri: "${{ BASE_URL }}/resource1/oidc/"
+        post_logout_redirect_uri: "${{ BASE_URL }}/resource1/"
       serverless-pre-function:
         phase: access
         functions:
@@ -93,7 +93,7 @@ routes:
         discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
         client_id: "${{ KEYCLOAK_CLIENT_ID }}"
         client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
-        access_denied_redirect_uri: "${{ BASE_URL}}/resource1/access-denied.html"
+        access_denied_redirect_uri: "${{ BASE_URL }}/resource1/access-denied.html"
         permissions:
           - "resource-one"
 
@@ -118,6 +118,7 @@ routes:
         "resource-two-service:80": 1
       type: roundrobin
     plugins:
+      response-rewrite: *response_rewrite_disable_cache
       proxy-rewrite:
         regex_uri:
           - "^/resource2/?(.*)$"
@@ -131,8 +132,8 @@ routes:
         discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
         scope: "openid email"
         realm: "${{ KEYCLOAK_REALM }}"
-        redirect_uri: "${{BASE_URL}}/oidc/"
-        post_logout_redirect_uri: "${{BASE_URL}}/resource2/"
+        redirect_uri: "${{ BASE_URL }}/resource2/oidc/"
+        post_logout_redirect_uri: "${{ BASE_URL }}/resource2/"
       serverless-pre-function:
         phase: access
         functions:
@@ -150,7 +151,7 @@ routes:
         discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
         client_id: "${{ KEYCLOAK_CLIENT_ID }}"
         client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
-        access_denied_redirect_uri: "${{ BASE_URL}}/resource2/access-denied.html"
+        access_denied_redirect_uri: "${{ BASE_URL }}/resource2/access-denied.html"
         permissions:
           - "resource-two"
 
@@ -175,6 +176,7 @@ routes:
         "resource-three-service:80": 1
       type: roundrobin
     plugins:
+      response-rewrite: *response_rewrite_disable_cache
       proxy-rewrite:
         regex_uri:
           - "^/resource3/?(.*)$"
@@ -188,8 +190,8 @@ routes:
         discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
         scope: "openid email"
         realm: "${{ KEYCLOAK_REALM }}"
-        redirect_uri: "${{BASE_URL}}/oidc/"
-        post_logout_redirect_uri: "${{BASE_URL}}/resource3"
+        redirect_uri: "${{ BASE_URL }}/resource3/oidc/"
+        post_logout_redirect_uri: "${{ BASE_URL }}/resource3/"
       serverless-pre-function:
         phase: access
         functions:
@@ -207,7 +209,7 @@ routes:
         discovery: "${{ KEYCLOAK_URL }}/realms/${{ KEYCLOAK_REALM }}/.well-known/openid-configuration"
         client_id: "${{ KEYCLOAK_CLIENT_ID }}"
         client_secret: "${{ KEYCLOAK_CLIENT_SECRET }}"
-        access_denied_redirect_uri: "${{ BASE_URL}}/resource3/access-denied.html"
+        access_denied_redirect_uri: "${{ BASE_URL }}/resource3/access-denied.html"
         permissions:
           - "resource-three"
 

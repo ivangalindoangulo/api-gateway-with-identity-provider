@@ -5,7 +5,7 @@ services:
     environment:
       - APISIX_SESSION_SECRET=${APISIX_SESSION_SECRET}
       - KEYCLOAK_URL=http://iam-service:8080/iam
-      - KEYCLOAK_CLIENT_ID=demo-APISIX
+      - KEYCLOAK_CLIENT_ID=demo-apisix
       - KEYCLOAK_CLIENT_SECRET=${APISIX_CLIENT_AUTH_SECRET}
       - KEYCLOAK_REALM=demo
       - BASE_URL=http://localhost
